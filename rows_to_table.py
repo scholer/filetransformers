@@ -29,12 +29,14 @@ from itertools import zip_longest
 def make_parser():
     """ Generate main parser. """
     parser = argparse.ArgumentParser()
-    parser.usage = "Transform lines in a file to a table construct."
+    parser.description = "Transform lines in a file to a table structure."
     parser.add_argument('files', nargs='*')
     parser.add_argument('--stdin', '-', action='store_true')
     parser.add_argument('--nrows', '-r', type=int, default=2)
     parser.add_argument('--sep', default='\t')
     parser.add_argument('--outfnfmt', help="Print to file rather than std out. E.g. {fnroot}-out.txt")
+    parser.add_argument('--no-escape', dest='escape', action='store_false', help="Do not escape sep input argument.")
+    parser.add_argument('--escape', dest='escape', action='store_true')
     return parser
 
 def transform_file(fdin, outputfn=None, sep=',', nrows=2):
@@ -53,6 +55,9 @@ def main(argv=None):
     """ Main function. Invoked if run from command line. """
     parser = make_parser()
     argns = parser.parse_args(argv)
+    if argns.sep and '\\' in argns.sep and argns.escape:
+        # in case the user tried to set --sep "\t" (which is escaped into "\\t"):
+        argns.sep = bytes(argns.sep, 'utf-8').decode('unicode_escape')
     if not argns.files and argns.stdin:
         transform_file(sys.stdin, sep=argns.sep, nrows=argns.nrows)
     for finpath in argns.files:
